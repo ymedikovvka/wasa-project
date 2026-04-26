@@ -1,0 +1,33 @@
+.git
+.gitignore
+.github/
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+compose.yaml
+wasatext.db
+wasatext.db-shm
+wasatext.db-wal
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+tmp/
+dist/
+build/
+coverage/
+.DS_Store
+node_modules/
+frontend/node_modules/
+frontend/dist/
+# Exclude the checked-in dev copy of the built static assets — the Docker
+# multi-stage build regenerates it from frontend/ with the current source.
+webui/
+# Editor / OS noise.
+.idea/
+.vscode/
+*.swp
+# Markdown notes that shouldn't end up inside the image.
+GRADING_CHECKLIST.md
+PROJECT_EXPLANATION.md

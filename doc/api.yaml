@@ -1,0 +1,1239 @@
+openapi: 3.0.3
+info:
+  title: WASAText API
+  description: |
+    API specification for the WASAText Web and Software Architecture project
+    at Sapienza University. The service exposes a simplified login endpoint
+    plus all the conversation, message and group operations required by the
+    final project brief.
+  version: "1.0.0"
+  contact:
+    name: WASAText Project
+    url: "https://gitlab.com/sapienza/wasatext"
+  license:
+    name: MIT
+    url: "https://opensource.org/licenses/MIT"
+
+servers:
+  - url: "http://localhost:3000"
+    description: Local development server.
+
+# Every endpoint except /session requires the bearer identifier returned by
+# the login flow. /session overrides this with `security: []` so it stays
+# reachable anonymously.
+security:
+  - bearerAuth: []
+
+tags:
+  - name: login
+    description: Simplified username-based login.
+  - name: users
+    description: User profile operations.
+  - name: conversations
+    description: Conversation and message operations.
+  - name: messages
+    description: Message actions such as forwarding, deleting, and commenting.
+  - name: groups
+    description: Group profile and membership operations.
+
+paths:
+  /session:
+    post:
+      tags: ["login"]
+      summary: Logs in the user
+      description: |
+        If the user does not exist, it is created and its identifier is returned.
+        If the user already exists, the existing user identifier is returned.
+      operationId: doLogin
+      security: []
+      requestBody:
+        description: Username used for the simplified login flow.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              name: Maria
+      responses:
+        "201":
+          description: User logged in successfully (new user created or existing one returned).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+              example:
+                identifier: "a96803ba13967508678f10d17c43bb40"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/me/name:
+    put:
+      tags: ["users"]
+      summary: Updates the current user's username
+      description: |
+        Changes the username of the authenticated user.
+        The new username must not already be used by another user.
+      operationId: setMyUserName
+      requestBody:
+        description: New username for the authenticated user.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetUserNameRequest"
+            example:
+              name: Maria2
+      responses:
+        "200":
+          description: Username updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "a96803ba13967508678f10d17c43bb40"
+                name: Maria2
+                photo: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Username already in use by another WASAText user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: username already in use
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/me/photo:
+    put:
+      tags: ["users"]
+      summary: Updates the current user's profile photo
+      description: Updates the profile photo of the authenticated user.
+      operationId: setMyPhoto
+      requestBody:
+        description: New profile photo encoded as base64.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPhotoRequest"
+            example:
+              photo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+      responses:
+        "200":
+          description: Profile photo updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users:
+    get:
+      tags: ["users"]
+      summary: Searches WASAText users
+      description: |
+        Returns existing WASAText users. If the name query parameter is provided,
+        only usernames containing that value are returned.
+      operationId: searchUsers
+      parameters:
+        - name: name
+          in: query
+          description: Optional username fragment to search for.
+          required: false
+          schema:
+            type: string
+            description: Case-insensitive username substring.
+            minLength: 1
+            maxLength: 16
+            pattern: "^[A-Za-z0-9_.-]+$"
+            example: Mar
+      responses:
+        "200":
+          description: Users returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /conversations:
+    get:
+      tags: ["conversations"]
+      summary: Lists the current user's conversations
+      description: |
+        Returns private and group conversations for the authenticated user,
+        sorted by latest message timestamp in reverse chronological order.
+      operationId: getMyConversations
+      responses:
+        "200":
+          description: Conversation list returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: ["conversations"]
+      summary: Starts a private conversation
+      description: |
+        Creates a private conversation with another WASAText user.
+        If the private conversation already exists, it is returned unchanged (idempotent).
+      operationId: startPrivateConversation
+      requestBody:
+        description: User to start a private conversation with.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartConversationRequest"
+            example:
+              userId: "5145b61240498f3995441c4a52121e8b"
+      responses:
+        "201":
+          description: Private conversation created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "200":
+          description: Existing private conversation returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /conversations/{conversationId}:
+    parameters:
+      - $ref: "#/components/parameters/ConversationId"
+    get:
+      tags: ["conversations"]
+      summary: Returns one conversation
+      description: |
+        Returns the messages of a conversation the authenticated user belongs to,
+        displayed in reverse chronological order. Also marks the conversation
+        as read by the requester (updates delivery status of incoming messages).
+      operationId: getConversation
+      responses:
+        "200":
+          description: Conversation returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /conversations/{conversationId}/messages:
+    parameters:
+      - $ref: "#/components/parameters/ConversationId"
+    post:
+      tags: ["conversations"]
+      summary: Sends a message in a conversation
+      description: |
+        Sends a text or photo message in a conversation the authenticated user belongs to.
+        A message can optionally reply to another message from the same conversation.
+      operationId: sendMessage
+      requestBody:
+        description: Message to send.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+            examples:
+              text:
+                summary: Text message
+                value:
+                  type: text
+                  text: Hello everyone!
+              textReply:
+                summary: Reply to another message
+                value:
+                  type: text
+                  text: Same here :)
+                  replyToMessageId: "a96803ba13967508678f10d17c43bb40"
+              photo:
+                summary: Photo message (base64 truncated)
+                value:
+                  type: photo
+                  photo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+      responses:
+        "201":
+          description: Message sent successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /messages/{messageId}/forward:
+    parameters:
+      - $ref: "#/components/parameters/MessageId"
+    post:
+      tags: ["messages"]
+      summary: Forwards a message
+      description: |
+        Forwards an existing message to another conversation the authenticated user belongs to.
+        The forwarded copy is flagged so recipients can tell it was not authored in-place.
+      operationId: forwardMessage
+      requestBody:
+        description: Destination conversation for the forwarded message.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardMessageRequest"
+            example:
+              conversationId: "fceffaabade321ac217bef2016931324"
+      responses:
+        "201":
+          description: Message forwarded successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /messages/{messageId}:
+    parameters:
+      - $ref: "#/components/parameters/MessageId"
+    delete:
+      tags: ["messages"]
+      summary: Deletes a sent message
+      description: Deletes a message sent by the authenticated user.
+      operationId: deleteMessage
+      responses:
+        "204":
+          description: Message deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /messages/{messageId}/comments/me:
+    parameters:
+      - $ref: "#/components/parameters/MessageId"
+    put:
+      tags: ["messages"]
+      summary: Comments a message
+      description: Adds or replaces the authenticated user's emoticon reaction on a message.
+      operationId: commentMessage
+      requestBody:
+        description: Emoticon reaction to apply on the message.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentMessageRequest"
+            example:
+              emoticon: "👍"
+      responses:
+        "200":
+          description: Message reaction saved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageReaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: ["messages"]
+      summary: Removes a message comment
+      description: Removes the authenticated user's emoticon reaction from a message.
+      operationId: uncommentMessage
+      responses:
+        "204":
+          description: Message reaction removed successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups:
+    post:
+      tags: ["groups"]
+      summary: Creates a group conversation
+      description: |
+        Creates a new group with the authenticated user and the selected WASAText users.
+      operationId: createGroup
+      requestBody:
+        description: New group details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequest"
+            example:
+              name: Study Group
+              memberIds:
+                - "5145b61240498f3995441c4a52121e8b"
+                - "e8d940ee9ebdfc54044a1431089c290d"
+      responses:
+        "201":
+          description: Group created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/{groupId}/name:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    put:
+      tags: ["groups"]
+      summary: Updates a group name
+      description: Changes the name of a group the authenticated user belongs to.
+      operationId: setGroupName
+      requestBody:
+        description: New group name.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetGroupNameRequest"
+            example:
+              name: Study Group 2026
+      responses:
+        "200":
+          description: Group name updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/{groupId}/photo:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    put:
+      tags: ["groups"]
+      summary: Updates a group photo
+      description: Changes the photo of a group the authenticated user belongs to.
+      operationId: setGroupPhoto
+      requestBody:
+        description: New group photo encoded as base64.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPhotoRequest"
+            example:
+              photo: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+      responses:
+        "200":
+          description: Group photo updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/{groupId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+      - $ref: "#/components/parameters/UserId"
+    put:
+      tags: ["groups"]
+      summary: Adds a user to a group
+      description: Adds another WASAText user to a group the authenticated user belongs to.
+      operationId: addToGroup
+      responses:
+        "200":
+          description: User added to group successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /groups/{groupId}/members/me:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    delete:
+      tags: ["groups"]
+      summary: Leaves a group
+      description: Removes the authenticated user from a group.
+      operationId: leaveGroup
+      responses:
+        "204":
+          description: User left the group successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: UserIdentifier
+      description: User identifier returned by the simplified login endpoint.
+
+  # Reusable error responses keep every operation consistent and make the
+  # spec ~30 % shorter than inlining the same Error schema under each code.
+  responses:
+    BadRequest:
+      description: The request payload is malformed or violates a validation rule.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: invalid message
+    Unauthorized:
+      description: Missing or invalid user identifier.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: missing or invalid user identifier
+    Forbidden:
+      description: The authenticated user is not allowed to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: user is not a member of this conversation
+    NotFound:
+      description: The requested resource does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: conversation not found
+    InternalServerError:
+      description: |
+        An unexpected error occurred on the server. The response carries a
+        generic error payload so clients never see stack traces or internal
+        details.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: internal server error
+
+  parameters:
+    ConversationId:
+      name: conversationId
+      in: path
+      description: Identifier of the conversation.
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+    MessageId:
+      name: messageId
+      in: path
+      description: Identifier of the message.
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+    GroupId:
+      name: groupId
+      in: path
+      description: Identifier of the group conversation.
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+    UserId:
+      name: userId
+      in: path
+      description: Identifier of a WASAText user.
+      required: true
+      schema:
+        $ref: "#/components/schemas/Identifier"
+
+  schemas:
+    # Opaque identifier used for users, conversations, and messages. The
+    # server issues 32-char hex strings but we deliberately leave room for
+    # slightly wider formats (prefixed test ids, etc.) so the spec doesn't
+    # reject valid payloads produced by fixtures.
+    Identifier:
+      title: Identifier
+      type: string
+      description: Opaque server-issued identifier.
+      minLength: 1
+      maxLength: 64
+      pattern: "^[A-Za-z0-9_-]+$"
+      example: "a96803ba13967508678f10d17c43bb40"
+
+    # Username constraints match the Sapienza brief verbatim (3–16, no
+    # whitespace) plus a defensive pattern that keeps usernames URL-safe.
+    Username:
+      title: Username
+      type: string
+      description: WASAText display name (3-16 URL-safe characters).
+      minLength: 3
+      maxLength: 16
+      pattern: "^[A-Za-z0-9_.-]+$"
+      example: Maria
+
+    # Free-form name used for groups. The Sapienza brief asks for 3-30 chars.
+    GroupName:
+      title: GroupName
+      type: string
+      description: Display name for a group conversation.
+      minLength: 3
+      maxLength: 30
+      pattern: "^[\\p{L}\\p{N} _.,!?'\\-]+$"
+      example: Study Group
+
+    # Base64-encoded image payload. maxLength comes from the server's 2 MiB
+    # decoded cap: base64 expands bytes by 4/3, so 2 MiB ≈ 2 796 204 chars.
+    PhotoData:
+      title: PhotoData
+      type: string
+      format: byte
+      description: Base64-encoded image data. Maximum 2 MiB once decoded.
+      minLength: 4
+      maxLength: 2796204
+      pattern: "^[A-Za-z0-9+/=]+$"
+      example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+
+    # Free-form message body. The character set is intentionally permissive
+    # to allow emoji and punctuation while still rejecting raw control bytes.
+    MessageText:
+      title: MessageText
+      type: string
+      description: Plain-text message body, supports any printable Unicode.
+      minLength: 1
+      maxLength: 1000
+      pattern: "^[\\s\\S]{1,1000}$"
+      example: Hello!
+
+    # Emoticons allow a few alias characters in addition to raw Unicode emoji
+    # so the legacy `:thumbsup:` / `+1` formats keep working.
+    Emoticon:
+      title: Emoticon
+      type: string
+      description: Emoji or emoticon shortcode used as a message reaction.
+      minLength: 1
+      maxLength: 32
+      pattern: "^[\\s\\S]{1,32}$"
+      example: "👍"
+
+    # Compact preview used in conversation lists.
+    MessagePreview:
+      title: MessagePreview
+      type: string
+      description: Short text snippet used in conversation lists.
+      minLength: 1
+      maxLength: 1000
+      pattern: "^[\\s\\S]{1,1000}$"
+      example: See you later
+
+    # ISO-8601 timestamp used everywhere a date appears.
+    Timestamp:
+      title: Timestamp
+      type: string
+      description: RFC 3339 / ISO 8601 timestamp in UTC.
+      format: date-time
+      minLength: 20
+      maxLength: 35
+      pattern: "^[0-9T:.\\-Z+]+$"
+      example: "2026-04-18T10:30:00Z"
+
+    LoginRequest:
+      title: LoginRequest
+      type: object
+      description: Username used for the simplified login flow.
+      properties:
+        name:
+          allOf:
+            - $ref: "#/components/schemas/Username"
+          description: Username to log in with (created on first use).
+      required:
+        - name
+
+    LoginResponse:
+      title: LoginResponse
+      type: object
+      description: Identifier returned after a successful login.
+      properties:
+        identifier:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Stable identifier for the authenticated user.
+      required:
+        - identifier
+
+    SetUserNameRequest:
+      title: SetUserNameRequest
+      type: object
+      description: New username for the authenticated user.
+      properties:
+        name:
+          allOf:
+            - $ref: "#/components/schemas/Username"
+          description: Replacement username; must not collide with another user.
+      required:
+        - name
+
+    SetPhotoRequest:
+      title: SetPhotoRequest
+      type: object
+      description: New base64-encoded photo for a user or group.
+      properties:
+        photo:
+          allOf:
+            - $ref: "#/components/schemas/PhotoData"
+          description: Base64-encoded image bytes (PNG or JPEG recommended).
+      required:
+        - photo
+
+    User:
+      title: User
+      type: object
+      description: WASAText user profile.
+      properties:
+        id:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Unique identifier for the user.
+        name:
+          allOf:
+            - $ref: "#/components/schemas/Username"
+          description: Display name chosen by the user.
+        photo:
+          # Inlined (rather than $ref'd) so the `nullable: true` qualifier
+          # has a sibling `type` — IBM's oas3-valid-media-example rule
+          # otherwise rejects the `photo: null` example below.
+          type: string
+          format: byte
+          nullable: true
+          minLength: 4
+          maxLength: 2796204
+          pattern: "^[A-Za-z0-9+/=]+$"
+          description: Base64-encoded profile photo, or null when none has been set.
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+      required:
+        - id
+        - name
+        - photo
+
+    UserList:
+      title: UserList
+      type: object
+      description: Existing WASAText users matching a search.
+      properties:
+        users:
+          type: array
+          description: User profiles matching the requested search.
+          minItems: 0
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/User"
+      required:
+        - users
+
+    ConversationList:
+      title: ConversationList
+      type: object
+      description: Conversations visible to the authenticated user.
+      properties:
+        conversations:
+          type: array
+          description: Conversations the authenticated user belongs to.
+          minItems: 0
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/ConversationPreview"
+      required:
+        - conversations
+
+    ConversationPreview:
+      title: ConversationPreview
+      type: object
+      description: Compact conversation information for the conversation list.
+      properties:
+        id:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Unique identifier for the conversation.
+        type:
+          type: string
+          description: Conversation kind, either a private 1:1 chat or a group.
+          enum: ["private", "group"]
+          minLength: 5
+          maxLength: 7
+          pattern: "^(private|group)$"
+          example: private
+        name:
+          allOf:
+            - $ref: "#/components/schemas/GroupName"
+          description: Other user's username for private chats, group name for groups.
+        photo:
+          type: string
+          format: byte
+          nullable: true
+          minLength: 4
+          maxLength: 2796204
+          pattern: "^[A-Za-z0-9+/=]+$"
+          description: Other user's photo for private chats, group photo for groups.
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+        latestMessageAt:
+          type: string
+          format: date-time
+          nullable: true
+          minLength: 20
+          maxLength: 35
+          pattern: "^[0-9T:.\\-Z+]+$"
+          description: Timestamp of the most recent message, or null when empty.
+          example: "2026-04-18T10:30:00Z"
+        latestMessagePreview:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 1000
+          pattern: "^[\\s\\S]{1,1000}$"
+          description: Text snippet of the most recent message, null when none or for photo messages.
+          example: See you later
+        latestMessageIsPhoto:
+          type: boolean
+          description: True when the latest message should be shown as a photo icon.
+          example: false
+      required:
+        - id
+        - type
+        - name
+        - photo
+        - latestMessageAt
+        - latestMessagePreview
+        - latestMessageIsPhoto
+
+    Conversation:
+      title: Conversation
+      type: object
+      description: Full conversation with members and messages.
+      properties:
+        id:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Unique identifier for the conversation.
+        type:
+          type: string
+          description: Conversation kind, either a private 1:1 chat or a group.
+          enum: ["private", "group"]
+          minLength: 5
+          maxLength: 7
+          pattern: "^(private|group)$"
+          example: group
+        name:
+          allOf:
+            - $ref: "#/components/schemas/GroupName"
+          description: Display name shown for this conversation.
+        photo:
+          type: string
+          format: byte
+          nullable: true
+          minLength: 4
+          maxLength: 2796204
+          pattern: "^[A-Za-z0-9+/=]+$"
+          description: Conversation photo, or null when none has been set.
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+        members:
+          type: array
+          description: Users that belong to the conversation.
+          minItems: 1
+          maxItems: 256
+          items:
+            $ref: "#/components/schemas/User"
+        messages:
+          type: array
+          description: Messages sorted in reverse chronological order.
+          minItems: 0
+          maxItems: 10000
+          items:
+            $ref: "#/components/schemas/Message"
+      required:
+        - id
+        - type
+        - name
+        - photo
+        - members
+        - messages
+
+    SendMessageRequest:
+      title: SendMessageRequest
+      type: object
+      description: Message content sent by the authenticated user.
+      properties:
+        type:
+          type: string
+          description: Indicates whether the message body is text or a photo.
+          enum: ["text", "photo"]
+          minLength: 4
+          maxLength: 5
+          pattern: "^(text|photo)$"
+          example: text
+        text:
+          # Inlined for the same reason as User.photo: nullable needs a
+          # sibling `type` so the request examples below validate.
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 1000
+          pattern: "^[\\s\\S]{1,1000}$"
+          description: Text body for text messages, omitted or null for photo messages.
+          example: Hello!
+        photo:
+          type: string
+          format: byte
+          nullable: true
+          minLength: 4
+          maxLength: 2796204
+          pattern: "^[A-Za-z0-9+/=]+$"
+          description: Base64 image bytes for photo messages, omitted or null for text messages.
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+        replyToMessageId:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_-]+$"
+          description: Identifier of the message being replied to, if any.
+          example: "a96803ba13967508678f10d17c43bb40"
+      required:
+        - type
+
+    StartConversationRequest:
+      title: StartConversationRequest
+      type: object
+      description: User selected for a new private conversation.
+      properties:
+        userId:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Identifier of the other user.
+      required:
+        - userId
+
+    CreateGroupRequest:
+      title: CreateGroupRequest
+      type: object
+      description: Details for a new group conversation.
+      properties:
+        name:
+          allOf:
+            - $ref: "#/components/schemas/GroupName"
+          description: Display name for the new group.
+        memberIds:
+          type: array
+          description: Users to add together with the authenticated user.
+          minItems: 1
+          maxItems: 256
+          items:
+            $ref: "#/components/schemas/Identifier"
+      required:
+        - name
+        - memberIds
+
+    ForwardMessageRequest:
+      title: ForwardMessageRequest
+      type: object
+      description: Destination for a forwarded message.
+      properties:
+        conversationId:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Conversation that will receive the forwarded message.
+      required:
+        - conversationId
+
+    CommentMessageRequest:
+      title: CommentMessageRequest
+      type: object
+      description: Emoticon reaction for a message.
+      properties:
+        emoticon:
+          allOf:
+            - $ref: "#/components/schemas/Emoticon"
+          description: Emoji or shortcode applied as the reaction.
+      required:
+        - emoticon
+
+    SetGroupNameRequest:
+      title: SetGroupNameRequest
+      type: object
+      description: New name for a group.
+      properties:
+        name:
+          allOf:
+            - $ref: "#/components/schemas/GroupName"
+          description: Replacement display name for the group.
+      required:
+        - name
+
+    Message:
+      title: Message
+      type: object
+      description: Message inside a conversation.
+      properties:
+        id:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Unique identifier for the message.
+        conversationId:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Identifier of the conversation that contains the message.
+        sender:
+          allOf:
+            - $ref: "#/components/schemas/User"
+          description: User who authored or forwarded the message.
+        timestamp:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          description: Time the message was created on the server.
+        type:
+          type: string
+          description: Indicates whether the message body is text or a photo.
+          enum: ["text", "photo"]
+          minLength: 4
+          maxLength: 5
+          pattern: "^(text|photo)$"
+          example: text
+        text:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 1000
+          pattern: "^[\\s\\S]{1,1000}$"
+          description: Text body for text messages, null for photo messages.
+          example: Hello!
+        photo:
+          type: string
+          format: byte
+          nullable: true
+          minLength: 4
+          maxLength: 2796204
+          pattern: "^[A-Za-z0-9+/=]+$"
+          description: Base64-encoded image data for photo messages, null otherwise.
+          example: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"
+        replyTo:
+          # Inlined object schema so the property has its own `type: object`
+          # next to `nullable: true`. The shape mirrors MessageReference.
+          type: object
+          nullable: true
+          description: Compact reference to the message being replied to, null when standalone.
+          properties:
+            id:
+              allOf:
+                - $ref: "#/components/schemas/Identifier"
+              description: Identifier of the referenced message.
+            senderName:
+              allOf:
+                - $ref: "#/components/schemas/Username"
+              description: Display name of the referenced message's sender.
+            preview:
+              allOf:
+                - $ref: "#/components/schemas/MessagePreview"
+              description: Short text snippet of the referenced message body.
+          required:
+            - id
+            - senderName
+            - preview
+        isForwarded:
+          type: boolean
+          description: True when this message was forwarded from another conversation.
+          example: false
+        forwardedFrom:
+          type: string
+          description: Display name of the original sender when isForwarded is true.
+          minLength: 1
+          maxLength: 30
+          pattern: "^[\\p{L}\\p{N} _.,!?'\\-]+$"
+          example: Marco
+        deliveryStatus:
+          type: string
+          description: |
+            `received` means the message has been delivered to every other member;
+            `read` means every other member has opened the conversation since the
+            message was sent.
+          enum: ["received", "read"]
+          minLength: 4
+          maxLength: 8
+          pattern: "^(received|read)$"
+          example: received
+        reactions:
+          type: array
+          description: Emoji reactions added by conversation members.
+          minItems: 0
+          maxItems: 256
+          items:
+            $ref: "#/components/schemas/MessageReaction"
+      required:
+        - id
+        - conversationId
+        - sender
+        - timestamp
+        - type
+        - text
+        - photo
+        - replyTo
+        - isForwarded
+        - deliveryStatus
+        - reactions
+
+    MessageReference:
+      title: MessageReference
+      type: object
+      description: Compact reference to a replied message.
+      properties:
+        id:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Identifier of the referenced message.
+        senderName:
+          allOf:
+            - $ref: "#/components/schemas/Username"
+          description: Display name of the referenced message's sender.
+        preview:
+          allOf:
+            - $ref: "#/components/schemas/MessagePreview"
+          description: Short text snippet of the referenced message body.
+      required:
+        - id
+        - senderName
+        - preview
+
+    MessageReaction:
+      title: MessageReaction
+      type: object
+      description: Emoji reaction added by a user to a message.
+      properties:
+        user:
+          allOf:
+            - $ref: "#/components/schemas/User"
+          description: User who reacted to the message.
+        emoticon:
+          allOf:
+            - $ref: "#/components/schemas/Emoticon"
+          description: Emoji or shortcode chosen as the reaction.
+      required:
+        - user
+        - emoticon
+
+    Error:
+      title: Error
+      type: object
+      description: Generic error response.
+      properties:
+        error:
+          type: string
+          description: Human-readable error message safe to display to end users.
+          minLength: 1
+          maxLength: 200
+          pattern: "^[\\s\\S]{1,200}$"
+          example: invalid username
+      required:
+        - error

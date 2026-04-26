@@ -1,0 +1,53 @@
+# Two-container deployment expected by the WASA grader: a Go API on port 3000
+# and an nginx-fronted Vue SPA on port 8080. The frontend container reverse-
+# proxies API paths to the backend over the compose-managed bridge network.
+#
+# The backend service MUST be called `backend` — frontend/nginx.conf hard-codes
+# `proxy_pass http://backend:3000`. Renaming this service breaks the SPA.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: wasatext-backend:latest
+    environment:
+      WASATEXT_ADDR: ":3000"
+      WASATEXT_DB_PATH: "/data/wasatext.db"
+    volumes:
+      - wasatext-data:/data
+    # Expose 3000 only on the internal compose network — the SPA reaches it
+    # through the nginx proxy, not from the host. Uncomment `ports:` below
+    # if you want to hit the API directly from your laptop for debugging.
+    expose:
+      - "3000"
+    # ports:
+    #   - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/liveness"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: wasatext-frontend:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  wasatext-data:

@@ -1,0 +1,67 @@
+# syntax=docker/dockerfile:1.7
+#
+# Backend image: builds the Go API server and runs it on its own.
+# The frontend lives in a separate container (see Dockerfile.frontend) which
+# proxies API paths to this service over the compose network.
+
+FROM golang:1.22-bookworm AS build
+
+WORKDIR /src
+
+# Cache module downloads in their own layer so source changes don't bust them.
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# CGO is required by go-sqlite3.
+RUN CGO_ENABLED=1 GOOS=linux go build \
+        -trimpath \
+        -ldflags="-s -w" \
+        -o /out/wasatext ./cmd/webapi
+
+# ---------------------------------------------------------------------------
+# Runtime stage — minimal Debian image with the binary and a non-root user.
+# ---------------------------------------------------------------------------
+FROM debian:bookworm-slim
+
+LABEL org.opencontainers.image.title="WASAText Backend" \
+      org.opencontainers.image.description="Go API server for the Sapienza WASA final project." \
+      org.opencontainers.image.source="https://gitlab.com/sapienza/wasatext" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="Sapienza University of Rome"
+
+# ca-certificates: TLS dial-out trust store (avoids surprises if anything in
+# the API ever calls an external HTTPS endpoint).
+# wget: used by HEALTHCHECK below.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates wget \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system --gid 10001 wasatext \
+  && useradd --system --uid 10001 --gid wasatext --home-dir /app --shell /usr/sbin/nologin wasatext \
+  && mkdir -p /app /data \
+  && chown -R wasatext:wasatext /data
+
+WORKDIR /app
+
+COPY --from=build /out/wasatext /app/wasatext
+
+ENV WASATEXT_ADDR=:3000 \
+    WASATEXT_DB_PATH=/data/wasatext.db
+
+# Persist the SQLite database across container restarts even if the operator
+# forgets to mount a named volume — docker will allocate an anonymous one.
+VOLUME ["/data"]
+
+EXPOSE 3000
+
+USER wasatext
+
+# Probe the liveness endpoint so docker/compose can detect process hangs.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/liveness || exit 1
+
+# Split ENTRYPOINT/CMD so runtime args (`docker run img -debug`) append to
+# the binary instead of replacing it.
+ENTRYPOINT ["/app/wasatext"]
+CMD []
