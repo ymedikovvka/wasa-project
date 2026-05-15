@@ -83,7 +83,7 @@ func run(logger *slog.Logger) error {
 		addr = ":3000"
 	}
 
-	staticDir := "webui"
+	staticDir := staticWebDir()
 	fileServer := http.FileServer(http.Dir(staticDir))
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isAPIPath(r.URL.Path) {
@@ -185,4 +185,11 @@ func isAPIPath(path string) bool {
 	default:
 		return false
 	}
+}
+
+func staticWebDir() string {
+	if info, err := os.Stat(filepath.Join("webui", "dist", "index.html")); err == nil && !info.IsDir() {
+		return filepath.Join("webui", "dist")
+	}
+	return "webui"
 }
