@@ -40,11 +40,11 @@ RUN apt-get update \
   && groupadd --system --gid 10001 wasatext \
   && useradd --system --uid 10001 --gid wasatext --home-dir /app --shell /usr/sbin/nologin wasatext \
   && mkdir -p /app /data \
-  && chown -R wasatext:wasatext /data
+  && chown -R wasatext:wasatext /app /data
 
 WORKDIR /app
 
-COPY --from=build /out/wasatext /app/wasatext
+COPY --from=build --chown=wasatext:wasatext /out/wasatext /app/wasatext
 
 ENV WASATEXT_ADDR=:3000 \
     WASATEXT_DB_PATH=/data/wasatext.db

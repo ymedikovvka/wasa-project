@@ -63,7 +63,11 @@ func run(logger *slog.Logger) error {
 
 	db, err := database.NewSQLite(dbPath)
 	if err != nil {
-		return err
+		logger.Warn("sqlite database unavailable, falling back to in-memory storage",
+			slog.String("db", dbPath),
+			slog.Any("error", err),
+		)
+		db = database.New()
 	}
 
 	apiRouter, err := api.New(api.Config{

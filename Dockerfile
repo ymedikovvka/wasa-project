@@ -10,12 +10,12 @@ RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/wasatex
 
 FROM node:22-bookworm-slim AS frontend
 
-WORKDIR /src/frontend
+WORKDIR /src/webui
 
-COPY frontend/package.json frontend/package-lock.json ./
+COPY webui/package.json webui/package-lock.json ./
 RUN npm ci
 
-COPY frontend ./
+COPY webui ./
 RUN npm run build
 
 FROM debian:bookworm-slim
@@ -39,7 +39,8 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY --from=build /out/wasatext /app/wasatext
-COPY --from=frontend /src/frontend/dist /app/webui
+COPY --from=frontend /src/webui/dist /app/webui
+RUN chown -R wasatext:wasatext /app /data
 
 ENV WASATEXT_ADDR=:3000 \
     WASATEXT_DB_PATH=/data/wasatext.db

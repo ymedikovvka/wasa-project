@@ -54,6 +54,11 @@ type MessageReaction struct {
 	Emoticon string
 }
 
+const (
+	messageTypeText  = "text"
+	messageTypePhoto = "photo"
+)
+
 // AppDatabase is the high-level interface used by the API layer.
 type AppDatabase interface {
 	LoginOrCreateUser(name string) (User, error)
@@ -613,7 +618,7 @@ func (db *appdbimpl) SendMessage(userID string, conversationID string, messageTy
 		return Message{}, ErrConversationForbidden
 	}
 
-	if messageType != "text" && messageType != "photo" {
+	if messageType != messageTypeText && messageType != messageTypePhoto {
 		return Message{}, ErrInvalidMessage
 	}
 

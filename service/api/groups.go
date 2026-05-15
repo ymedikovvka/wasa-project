@@ -17,6 +17,12 @@ type setGroupNameRequest struct {
 	Name string `json:"name"`
 }
 
+const (
+	groupSubresourceName    = "name"
+	groupSubresourcePhoto   = "photo"
+	groupSubresourceMembers = "members"
+)
+
 func (rt *router) groups(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -35,7 +41,7 @@ func (rt *router) groupByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch subresource {
-	case "name":
+	case groupSubresourceName:
 		switch r.Method {
 		case http.MethodPut:
 			rt.setGroupName(w, r, groupID)
@@ -43,7 +49,7 @@ func (rt *router) groupByID(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Allow", http.MethodPut)
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		}
-	case "photo":
+	case groupSubresourcePhoto:
 		switch r.Method {
 		case http.MethodPut:
 			rt.setGroupPhoto(w, r, groupID)
@@ -51,7 +57,7 @@ func (rt *router) groupByID(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Allow", http.MethodPut)
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		}
-	case "members":
+	case groupSubresourceMembers:
 		if userID == "me" {
 			switch r.Method {
 			case http.MethodDelete:
@@ -245,10 +251,10 @@ func groupPathParts(path string) (string, string, string, bool) {
 
 	remaining := strings.TrimPrefix(path, prefix)
 	parts := strings.Split(remaining, "/")
-	if len(parts) == 2 && parts[0] != "" && (parts[1] == "name" || parts[1] == "photo") {
+	if len(parts) == 2 && parts[0] != "" && (parts[1] == groupSubresourceName || parts[1] == groupSubresourcePhoto) {
 		return parts[0], parts[1], "", true
 	}
-	if len(parts) == 3 && parts[0] != "" && parts[1] == "members" && parts[2] != "" {
+	if len(parts) == 3 && parts[0] != "" && parts[1] == groupSubresourceMembers && parts[2] != "" {
 		return parts[0], parts[1], parts[2], true
 	}
 

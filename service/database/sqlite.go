@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	_ "embed"
+	"errors"
 	"net/url"
 	"strings"
 	"time"
@@ -345,7 +346,7 @@ func (db *appdbimpl) upsertUserSQLite(user User) error {
 	return err
 }
 
-func (db *appdbimpl) insertConversationSQLite(conversation Conversation) error {
+func (db *appdbimpl) insertConversationSQLite(conversation Conversation) (err error) {
 	if db.sqlDB == nil {
 		return nil
 	}
@@ -354,7 +355,12 @@ func (db *appdbimpl) insertConversationSQLite(conversation Conversation) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) && err == nil {
+			err = rollbackErr
+		}
+	}()
 
 	if _, err := tx.Exec(
 		"INSERT INTO conversations (id, type, name, photo, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -440,7 +446,7 @@ func (db *appdbimpl) insertMessageSQLite(message Message) error {
 	return err
 }
 
-func (db *appdbimpl) deleteMessageSQLite(messageID string) error {
+func (db *appdbimpl) deleteMessageSQLite(messageID string) (err error) {
 	if db.sqlDB == nil {
 		return nil
 	}
@@ -449,7 +455,12 @@ func (db *appdbimpl) deleteMessageSQLite(messageID string) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) && err == nil {
+			err = rollbackErr
+		}
+	}()
 
 	if _, err := tx.Exec("UPDATE messages SET reply_to_message_id = NULL WHERE reply_to_message_id = ?", messageID); err != nil {
 		return err

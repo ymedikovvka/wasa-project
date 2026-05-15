@@ -13,10 +13,10 @@ WORKDIR /src
 
 # Build context is the repository root so the grader can run
 # `docker build -f Dockerfile.frontend .` without juggling sub-paths.
-COPY frontend/package.json frontend/package-lock.json ./
+COPY webui/package.json webui/package-lock.json ./
 RUN npm ci
 
-COPY frontend/ ./
+COPY webui/ ./
 RUN npm run build
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ LABEL org.opencontainers.image.title="WASAText Frontend" \
 
 # Replace the stock site config with our SPA-aware one.
 RUN rm /etc/nginx/conf.d/default.conf
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY webui/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Vite emits the production bundle into /src/dist; ship it as nginx's webroot.
 COPY --from=build /src/dist /usr/share/nginx/html

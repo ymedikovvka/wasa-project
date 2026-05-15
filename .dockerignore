@@ -21,9 +21,9 @@ coverage/
 node_modules/
 frontend/node_modules/
 frontend/dist/
-# Exclude the checked-in dev copy of the built static assets — the Docker
-# multi-stage build regenerates it from frontend/ with the current source.
-webui/
+webui/node_modules/
+webui/dist/
+webui/assets/
 # Editor / OS noise.
 .idea/
 .vscode/

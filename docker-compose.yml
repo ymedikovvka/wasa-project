@@ -2,8 +2,8 @@
 # and an nginx-fronted Vue SPA on port 8080. The frontend container reverse-
 # proxies API paths to the backend over the compose-managed bridge network.
 #
-# The backend service MUST be called `backend` — frontend/nginx.conf hard-codes
-# `proxy_pass http://backend:3000`. Renaming this service breaks the SPA.
+# The backend service is called `backend`; webui/nginx.conf uses that DNS name
+# when the frontend proxies API requests over the compose network.
 
 services:
   backend:

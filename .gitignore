@@ -8,9 +8,10 @@ wasatext.db-wal
 *.sqlite3
 frontend/node_modules/
 frontend/dist/
-# webui/ is the built SPA — regenerated from frontend/ by the Docker frontend
-# stage, so no need to track it in the repo.
-webui/
+webui/node_modules/
+webui/dist/
+webui/assets/
+.cache/
 /tmp/
 .DS_Store
 .idea/

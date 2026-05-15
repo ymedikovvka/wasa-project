@@ -70,12 +70,17 @@ type messageReactionResponse struct {
 	Emoticon string       `json:"emoticon"`
 }
 
+const (
+	messageTypeText  = "text"
+	messageTypePhoto = "photo"
+)
+
 func (rt *router) conversations(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		rt.getMyConversations(w, r)
 	case http.MethodPost:
-		rt.startConversation(w, r)
+		rt.startPrivateConversation(w, r)
 	default:
 		w.Header().Set("Allow", http.MethodGet+", "+http.MethodPost)
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -176,7 +181,7 @@ func (rt *router) getConversation(w http.ResponseWriter, r *http.Request, conver
 	writeJSON(w, http.StatusOK, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) startConversation(w http.ResponseWriter, r *http.Request) {
+func (rt *router) startPrivateConversation(w http.ResponseWriter, r *http.Request) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -302,8 +307,8 @@ func toConversationPreviewResponse(conversation database.Conversation, currentUs
 		latestMessage := conversation.Messages[len(conversation.Messages)-1]
 		timestamp := latestMessage.Timestamp.Format(timeFormat)
 		response.LatestMessageAt = &timestamp
-		response.LatestMessageIsPhoto = latestMessage.Type == "photo"
-		if latestMessage.Type == "text" {
+		response.LatestMessageIsPhoto = latestMessage.Type == messageTypePhoto
+		if latestMessage.Type == messageTypeText {
 			response.LatestMessagePreview = latestMessage.Text
 		}
 	}
@@ -360,7 +365,7 @@ func messageReferenceFor(conversation database.Conversation, messageID *string) 
 }
 
 func messagePreview(message database.Message) string {
-	if message.Type == "photo" {
+	if message.Type == messageTypePhoto {
 		return "Photo"
 	}
 	if message.Text == nil {
@@ -371,9 +376,9 @@ func messagePreview(message database.Message) string {
 
 func validMessageRequest(req sendMessageRequest) bool {
 	switch req.Type {
-	case "text":
+	case messageTypeText:
 		return trimmedStringPointer(req.Text) != nil
-	case "photo":
+	case messageTypePhoto:
 		photo := trimmedStringPointer(req.Photo)
 		return photo != nil && validBase64Photo(*photo)
 	default:
