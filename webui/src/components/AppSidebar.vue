@@ -28,6 +28,20 @@ function preview(conversation) {
   if (conversation.latestMessageIsPhoto) return "Photo message";
   return conversation.latestMessagePreview || "No messages yet";
 }
+
+// The WASAText spec requires each conversation in the list to show the date
+// and time of its latest message. Same-day messages show the clock time;
+// older ones show the day/month.
+function latestTime(conversation) {
+  if (!conversation.latestMessageAt) return "";
+  const when = new Date(conversation.latestMessageAt);
+  if (Number.isNaN(when.getTime())) return "";
+  const now = new Date();
+  if (when.toDateString() === now.toDateString()) {
+    return when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  return when.toLocaleDateString([], { day: "2-digit", month: "2-digit" });
+}
 </script>
 
 <template>
@@ -109,7 +123,10 @@ function preview(conversation) {
               <strong>{{ conversation.name }}</strong>
               <small>{{ preview(conversation) }}</small>
             </span>
-            <span class="conversation-meta">{{ conversation.type === "group" ? "Group" : "" }}</span>
+            <span class="conversation-meta">
+              <span v-if="latestTime(conversation)" class="conversation-time">{{ latestTime(conversation) }}</span>
+              <span v-if="conversation.type === 'group'" class="conversation-tag">Group</span>
+            </span>
           </button>
         </template>
       </div>

@@ -131,7 +131,11 @@ function sendRegular(message, conversationId) {
           <div v-else class="message-text">{{ message.text }}</div>
           <div class="bubble-footer">
             <span>{{ new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }}</span>
-            <span v-if="isMine(message)" class="delivery-status">{{ message.deliveryStatus || "received" }}</span>
+            <span
+              v-if="isMine(message)"
+              class="delivery-status"
+              :title="message.deliveryStatus === 'read' ? 'Read by everyone' : 'Received by everyone'"
+            >{{ message.deliveryStatus === "read" ? "✓✓" : "✓" }}</span>
           </div>
         </div>
 

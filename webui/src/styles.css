@@ -387,6 +387,28 @@ input {
   white-space: nowrap;
 }
 
+.conversation-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  justify-self: end;
+}
+
+.conversation-time {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.conversation-tag {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .avatar {
   display: inline-flex;
   align-items: center;

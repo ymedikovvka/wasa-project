@@ -54,12 +54,21 @@ const modalBusy = ref(false);
 
 const visibleConversations = computed(() => {
   const query = chatQuery.value.trim().toLowerCase();
-  if (!query) return conversations.value;
-  return conversations.value.filter((conversation) => {
-    const preview = conversation.latestMessageIsPhoto
-      ? "photo message"
-      : conversation.latestMessagePreview || "";
-    return `${conversation.name} ${preview}`.toLowerCase().includes(query);
+  let list = conversations.value;
+  if (query) {
+    list = list.filter((conversation) => {
+      const preview = conversation.latestMessageIsPhoto
+        ? "photo message"
+        : conversation.latestMessagePreview || "";
+      return `${conversation.name} ${preview}`.toLowerCase().includes(query);
+    });
+  }
+  // Reverse-chronological order (most recent activity first), as the
+  // WASAText specification requires for the conversation list.
+  return [...list].sort((left, right) => {
+    const leftTime = left.latestMessageAt ? new Date(left.latestMessageAt).getTime() : 0;
+    const rightTime = right.latestMessageAt ? new Date(right.latestMessageAt).getTime() : 0;
+    return rightTime - leftTime;
   });
 });
 
