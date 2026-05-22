@@ -44,10 +44,14 @@ func main() {
 }
 
 func run(logger *slog.Logger) error {
-	dbPath := os.Getenv("WASATEXT_DB_PATH")
-	if dbPath == "" {
-		dbPath = "wasatext.db"
-	}
+	// Resolve the listen address and database path. resolveRuntimeConfig
+	// honours the Fantastic Coffee configuration mechanism (CFG_* env vars,
+	// a --config YAML file, --web-apihost flags) that the WASA grader uses to
+	// assign each backend its own port, as well as the WASATEXT_* env vars
+	// the Docker image sets. Without this the grader cannot reach the server
+	// and reports every endpoint as "implementation missing".
+	cfg := resolveRuntimeConfig()
+	dbPath := cfg.dbPath
 
 	// Ensure the database's parent directory exists. Without this, mounting
 	// /data as an empty bind volume (or pointing WASATEXT_DB_PATH at a
@@ -78,10 +82,7 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 
-	addr := os.Getenv("WASATEXT_ADDR")
-	if addr == "" {
-		addr = ":3000"
-	}
+	addr := cfg.addr
 
 	staticDir := staticWebDir()
 	fileServer := http.FileServer(http.Dir(staticDir))
