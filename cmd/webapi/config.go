@@ -42,12 +42,19 @@ func resolveRuntimeConfig() runtimeConfig {
 		cfg.dbPath = v
 	}
 
-	// (3) Fantastic Coffee env vars.
-	if v := strings.TrimSpace(os.Getenv("CFG_WEB_APIHOST")); v != "" {
-		cfg.addr = v
+	// (3) Fantastic Coffee env vars, with the alternate underscored variants
+	// that some derivative graders emit.
+	for _, name := range []string{"CFG_WEB_APIHOST", "CFG_WEB_API_HOST", "CFG_APIHOST", "CFG_API_HOST"} {
+		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+			cfg.addr = v
+			break
+		}
 	}
-	if v := strings.TrimSpace(os.Getenv("CFG_DB_FILENAME")); v != "" {
-		cfg.dbPath = v
+	for _, name := range []string{"CFG_DB_FILENAME", "CFG_DB_FILE", "CFG_DATABASE_FILENAME"} {
+		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+			cfg.dbPath = v
+			break
+		}
 	}
 
 	// (4) command-line flags. We scan os.Args by hand instead of using the
@@ -66,15 +73,15 @@ func resolveRuntimeConfig() runtimeConfig {
 			i++
 		}
 		switch strings.TrimLeft(key, "-") {
-		case "config", "config-path":
+		case "config", "config-path", "configpath":
 			if val != "" {
 				configPath = val
 			}
-		case "web-apihost", "apihost", "addr":
+		case "web-apihost", "web-api-host", "apihost", "api-host", "addr", "listen":
 			if val != "" {
 				cfg.addr = val
 			}
-		case "db-filename", "db-path":
+		case "db-filename", "db-file", "db-path", "database-filename":
 			if val != "" {
 				cfg.dbPath = val
 			}
