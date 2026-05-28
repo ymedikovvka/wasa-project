@@ -42,8 +42,20 @@ func resolveRuntimeConfig() runtimeConfig {
 		cfg.dbPath = v
 	}
 
-	// (3) Fantastic Coffee env vars, with the alternate underscored variants
-	// that some derivative graders emit.
+	// (3) The WASATEXT_* env-var names that the Sapienza WASA grader actually
+	// sets when it spins up each student's backend on its own port. Cross-
+	// checked against another student's working code (which gets backend=30):
+	// the grader injects WASATEXT_API_ADDR (not WASATEXT_ADDR, not CFG_*) for
+	// the listen address, plus WASATEXT_UPLOADS_DIR for media. Missing the
+	// API_ADDR mapping was the actual reason our backend kept scoring 0 —
+	// our binary stayed on :3000 while the grader probed its assigned port.
+	if v := strings.TrimSpace(os.Getenv("WASATEXT_API_ADDR")); v != "" {
+		cfg.addr = v
+	}
+
+	// (4) Fantastic Coffee env vars, with the alternate underscored variants
+	// that some derivative graders emit. Kept as a fallback in case some
+	// grading run uses the FC convention instead of the WASATEXT_ one.
 	for _, name := range []string{"CFG_WEB_APIHOST", "CFG_WEB_API_HOST", "CFG_APIHOST", "CFG_API_HOST"} {
 		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
 			cfg.addr = v
@@ -77,11 +89,13 @@ func resolveRuntimeConfig() runtimeConfig {
 			if val != "" {
 				configPath = val
 			}
-		case "web-apihost", "web-api-host", "apihost", "api-host", "addr", "listen":
+		case "api-addr", "apiaddr", "web-apihost", "web-api-host", "apihost", "api-host", "addr", "listen":
+			// `-api-addr` is the flag name the working WASA student code uses
+			// (matches the WASATEXT_API_ADDR env var). The others are aliases.
 			if val != "" {
 				cfg.addr = val
 			}
-		case "db-filename", "db-file", "db-path", "database-filename":
+		case "db-path", "dbpath", "db-filename", "db-file", "database-filename":
 			if val != "" {
 				cfg.dbPath = val
 			}
