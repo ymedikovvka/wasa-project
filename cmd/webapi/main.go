@@ -178,6 +178,7 @@ func isAPIPath(path string) bool {
 	case path == "/session",
 		path == "/users",
 		path == "/users/me/name",
+		path == "/users/me/username",
 		path == "/users/me/photo",
 		path == "/conversations",
 		path == "/liveness":
