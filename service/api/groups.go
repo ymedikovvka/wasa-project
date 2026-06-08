@@ -27,7 +27,7 @@ const (
 	groupSubresourceMembers = "members"
 )
 
-func (rt *router) groups(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) groups(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		rt.createGroup(w, r)
@@ -37,7 +37,7 @@ func (rt *router) groups(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) groupByID(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) groupByID(w http.ResponseWriter, r *http.Request) {
 	groupID, subresource, userID, ok := groupPathParts(r.URL.Path)
 	if !ok {
 		writeError(w, http.StatusNotFound, "group not found")
@@ -106,7 +106,7 @@ func (rt *router) groupByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) createGroup(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) createGroup(w http.ResponseWriter, r *http.Request) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -136,7 +136,7 @@ func (rt *router) createGroup(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) setGroupName(w http.ResponseWriter, r *http.Request, groupID string) {
+func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, groupID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -174,7 +174,7 @@ func (rt *router) setGroupName(w http.ResponseWriter, r *http.Request, groupID s
 	writeJSON(w, http.StatusOK, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) setGroupPhoto(w http.ResponseWriter, r *http.Request, groupID string) {
+func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, groupID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -213,7 +213,7 @@ func (rt *router) setGroupPhoto(w http.ResponseWriter, r *http.Request, groupID 
 	writeJSON(w, http.StatusOK, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) addToGroup(w http.ResponseWriter, r *http.Request, groupID string, addedUserID string) {
+func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, groupID string, addedUserID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -241,7 +241,7 @@ func (rt *router) addToGroup(w http.ResponseWriter, r *http.Request, groupID str
 	writeJSON(w, http.StatusOK, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) leaveGroup(w http.ResponseWriter, r *http.Request, groupID string) {
+func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, groupID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")

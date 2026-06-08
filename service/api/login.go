@@ -15,7 +15,7 @@ type loginResponse struct {
 	Identifier string `json:"identifier"`
 }
 
-func (rt *router) doLogin(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")

@@ -27,7 +27,7 @@ type setPhotoRequest struct {
 	Photo string `json:"photo"`
 }
 
-func (rt *router) users(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) users(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		rt.searchUsers(w, r)
@@ -37,7 +37,7 @@ func (rt *router) users(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) myUserName(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) myUserName(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPut:
 		rt.setMyUserName(w, r)
@@ -47,7 +47,7 @@ func (rt *router) myUserName(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) myPhoto(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) myPhoto(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPut:
 		rt.setMyPhoto(w, r)
@@ -57,7 +57,7 @@ func (rt *router) myPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) searchUsers(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) searchUsers(w http.ResponseWriter, r *http.Request) {
 	if _, err := rt.currentUser(r); err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
 		return
@@ -79,7 +79,7 @@ func (rt *router) searchUsers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func (rt *router) setMyUserName(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -113,7 +113,7 @@ func (rt *router) setMyUserName(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toUserResponse(updatedUser))
 }
 
-func (rt *router) setMyPhoto(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")

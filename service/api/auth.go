@@ -9,7 +9,7 @@ import (
 
 var errUnauthorized = errors.New("missing or invalid user identifier")
 
-func (rt *router) currentUser(r *http.Request) (database.User, error) {
+func (rt *_router) currentUser(r *http.Request) (database.User, error) {
 	header := strings.TrimSpace(r.Header.Get("Authorization"))
 	if header == "" {
 		return database.User{}, errUnauthorized

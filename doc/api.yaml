@@ -69,7 +69,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /users/me/name:
+  /users/me/username:
     put:
       tags: ["users"]
       summary: Updates the current user's username
@@ -309,8 +309,9 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /messages/{messageId}/forward:
+  /conversations/{conversationId}/messages/{messageId}/forward:
     parameters:
+      - $ref: "#/components/parameters/ConversationId"
       - $ref: "#/components/parameters/MessageId"
     post:
       tags: ["messages"]
@@ -346,8 +347,9 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /messages/{messageId}:
+  /conversations/{conversationId}/messages/{messageId}:
     parameters:
+      - $ref: "#/components/parameters/ConversationId"
       - $ref: "#/components/parameters/MessageId"
     delete:
       tags: ["messages"]
@@ -366,8 +368,9 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /messages/{messageId}/comments/me:
+  /conversations/{conversationId}/messages/{messageId}/comments:
     parameters:
+      - $ref: "#/components/parameters/ConversationId"
       - $ref: "#/components/parameters/MessageId"
     put:
       tags: ["messages"]
@@ -522,15 +525,23 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /groups/{groupId}/members/{userId}:
+  /groups/{groupId}/members:
     parameters:
       - $ref: "#/components/parameters/GroupId"
-      - $ref: "#/components/parameters/UserId"
-    put:
+    post:
       tags: ["groups"]
       summary: Adds a user to a group
       description: Adds another WASAText user to a group the authenticated user belongs to.
       operationId: addToGroup
+      requestBody:
+        description: User to add to the group.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMemberRequest"
+            example:
+              userId: "5145b61240498f3995441c4a52121e8b"
       responses:
         "200":
           description: User added to group successfully.
@@ -1072,6 +1083,18 @@ components:
           description: Replacement display name for the group.
       required:
         - name
+
+    AddMemberRequest:
+      title: AddMemberRequest
+      type: object
+      description: User to add to an existing group.
+      properties:
+        userId:
+          allOf:
+            - $ref: "#/components/schemas/Identifier"
+          description: Identifier of the user to add.
+      required:
+        - userId
 
     Message:
       title: Message

@@ -21,7 +21,7 @@ type Router interface {
 	Close() error
 }
 
-type router struct {
+type _router struct {
 	db     database.AppDatabase
 	mux    *http.ServeMux
 	logger *slog.Logger
@@ -31,7 +31,7 @@ type router struct {
 // no router-scoped resources — the database connection is owned by main —
 // so this is a no-op, but the method must exist to satisfy the FC-style
 // Router contract.
-func (rt *router) Close() error {
+func (rt *_router) Close() error {
 	return nil
 }
 
@@ -46,7 +46,7 @@ func New(cfg Config) (Router, error) {
 		logger = slog.Default()
 	}
 
-	rt := &router{
+	rt := &_router{
 		db:     cfg.Database,
 		mux:    http.NewServeMux(),
 		logger: logger,
@@ -57,6 +57,6 @@ func New(cfg Config) (Router, error) {
 }
 
 // Handler returns the HTTP handler for all registered API routes.
-func (rt *router) Handler() http.Handler {
+func (rt *_router) Handler() http.Handler {
 	return rt.mux
 }

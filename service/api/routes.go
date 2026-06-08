@@ -1,6 +1,6 @@
 package api
 
-func (rt *router) registerRoutes() {
+func (rt *_router) registerRoutes() {
 	rt.mux.HandleFunc("/session", rt.doLogin)
 	rt.mux.HandleFunc("/users", rt.users)
 	rt.mux.HandleFunc("/users/me/name", rt.myUserName)

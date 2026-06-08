@@ -16,7 +16,7 @@ type commentMessageRequest struct {
 	Emoticon string `json:"emoticon"`
 }
 
-func (rt *router) messageByID(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) messageByID(w http.ResponseWriter, r *http.Request) {
 	messageID, action, ok := messagePathParts(r.URL.Path)
 	if !ok {
 		writeError(w, http.StatusNotFound, "message not found")
@@ -55,7 +55,7 @@ func (rt *router) messageByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) deleteMessage(w http.ResponseWriter, r *http.Request, messageID string) {
+func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, messageID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -83,7 +83,7 @@ func (rt *router) deleteMessage(w http.ResponseWriter, r *http.Request, messageI
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (rt *router) forwardMessage(w http.ResponseWriter, r *http.Request, messageID string) {
+func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, messageID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -125,7 +125,7 @@ func (rt *router) forwardMessage(w http.ResponseWriter, r *http.Request, message
 	writeJSON(w, http.StatusCreated, toMessageResponse(message, nil))
 }
 
-func (rt *router) commentMessage(w http.ResponseWriter, r *http.Request, messageID string) {
+func (rt *_router) commentMessage(w http.ResponseWriter, r *http.Request, messageID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -163,7 +163,7 @@ func (rt *router) commentMessage(w http.ResponseWriter, r *http.Request, message
 	writeJSON(w, http.StatusOK, toMessageReactionResponse(reaction))
 }
 
-func (rt *router) uncommentMessage(w http.ResponseWriter, r *http.Request, messageID string) {
+func (rt *_router) uncommentMessage(w http.ResponseWriter, r *http.Request, messageID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")

@@ -75,7 +75,7 @@ const (
 	messageTypePhoto = "photo"
 )
 
-func (rt *router) conversations(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) conversations(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		rt.getMyConversations(w, r)
@@ -87,7 +87,7 @@ func (rt *router) conversations(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) conversationByID(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) conversationByID(w http.ResponseWriter, r *http.Request) {
 	convID, messageID, action, ok := parseConversationPath(r.URL.Path)
 	if !ok {
 		writeError(w, http.StatusNotFound, "conversation not found")
@@ -148,7 +148,7 @@ func (rt *router) conversationByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rt *router) getMyConversations(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -175,7 +175,7 @@ func (rt *router) getMyConversations(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func (rt *router) getConversation(w http.ResponseWriter, r *http.Request, conversationID string) {
+func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, conversationID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -215,7 +215,7 @@ func (rt *router) getConversation(w http.ResponseWriter, r *http.Request, conver
 	writeJSON(w, http.StatusOK, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) startPrivateConversation(w http.ResponseWriter, r *http.Request) {
+func (rt *_router) startPrivateConversation(w http.ResponseWriter, r *http.Request) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
@@ -250,7 +250,7 @@ func (rt *router) startPrivateConversation(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, status, toConversationResponse(conversation, currentUser.ID))
 }
 
-func (rt *router) sendMessage(w http.ResponseWriter, r *http.Request, conversationID string) {
+func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, conversationID string) {
 	currentUser, err := rt.currentUser(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "missing or invalid user identifier")
