@@ -72,23 +72,23 @@ const sendPhoto = runWith(sending, async (photoBase64) => {
 
 const addReaction = runWith(sending, async (message, reaction) => {
   const normalized = normalizeReaction(reaction);
-  await api("put", `/messages/${message.id}/comments/me`, { emoticon: normalized });
+  await api("put", `/conversations/${message.conversationId}/messages/${message.id}/comments`, { emoticon: normalized });
   if (activeConversation.value) await openConversation(activeConversation.value.id);
 });
 
 const removeReaction = runWith(sending, async (message) => {
-  await api("delete", `/messages/${message.id}/comments/me`);
+  await api("delete", `/conversations/${message.conversationId}/messages/${message.id}/comments`);
   if (activeConversation.value) await openConversation(activeConversation.value.id);
 });
 
 const deleteMessage = runWith(sending, async (message) => {
-  await api("delete", `/messages/${message.id}`);
+  await api("delete", `/conversations/${message.conversationId}/messages/${message.id}`);
   if (activeConversation.value) await openConversation(activeConversation.value.id);
   await loadConversations();
 });
 
 const forwardMessage = runWith(sending, async (message, conversationId) => {
-  await api("post", `/messages/${message.id}/forward`, { conversationId });
+  await api("post", `/conversations/${message.conversationId}/messages/${message.id}/forward`, { conversationId });
   await loadConversations();
 });
 

@@ -258,7 +258,7 @@ async function setGroupPhoto() {
 async function addMember(id) {
   modalBusy.value = true;
   try {
-    activeConversation.value = await api("put", `/groups/${activeConversation.value.id}/members/${id}`);
+    activeConversation.value = await api("post", `/groups/${activeConversation.value.id}/members`, { userId: id });
     notify("Member added");
   } catch (err) {
     notify(err.response?.data?.error || err.message);

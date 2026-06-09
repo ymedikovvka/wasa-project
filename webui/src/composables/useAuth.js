@@ -57,7 +57,7 @@ async function updateName(newName) {
   loading.value = true;
   error.value = "";
   try {
-    const updated = await api("put", "/users/me/name", { name: newName });
+    const updated = await api("put", "/users/me/username", { name: newName });
     rememberIdentity(updated);
     return updated;
   } catch (err) {

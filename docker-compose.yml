@@ -16,13 +16,10 @@ services:
       WASATEXT_DB_PATH: "/data/wasatext.db"
     volumes:
       - wasatext-data:/data
-    # Expose 3000 only on the internal compose network — the SPA reaches it
-    # through the nginx proxy, not from the host. Uncomment `ports:` below
-    # if you want to hit the API directly from your laptop for debugging.
     expose:
       - "3000"
-    # ports:
-    #   - "3000:3000"
+    ports:
+      - "3000:3000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/liveness"]

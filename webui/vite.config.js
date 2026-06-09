@@ -15,6 +15,11 @@ const apiProxy = {
 
 export default defineConfig({
   plugins: [vue()],
+  define: {
+    // Do not modify this constant: the WASA frontend evaluator replaces it
+    // when frontend and backend are started on different machines/ports.
+    __API_URL__: JSON.stringify("http://localhost:3000"),
+  },
   // `server` is used by `npm run dev`; `preview` by `npm run preview`.
   // Vite keeps these proxy tables separate, so declare both.
   server: { proxy: apiProxy },

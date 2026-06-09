@@ -832,11 +832,20 @@ func (db *appdbimpl) UncommentMessage(userID string, messageID string) error {
 }
 
 func validUserName(name string) bool {
-	return len(name) >= 3 && len(name) <= 16
+	if len(name) < 3 || len(name) > 16 {
+		return false
+	}
+	for _, r := range name {
+		if !((r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') ||
+			(r >= '0' && r <= '9') || r == '_' || r == '.' || r == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 func validGroupName(name string) bool {
-	return len(name) >= 1 && len(name) <= 32
+	return len(name) >= 3 && len(name) <= 30
 }
 
 func validEmoticon(emoticon string) bool {
